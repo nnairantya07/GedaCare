@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GedaCare | Skin Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #fdfbfb;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Background Blobs seperti kode awal */
+        .background-blobs {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.4;
+            border-radius: 50%;
+        }
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: #ff85a1;
+            top: -100px;
+            right: -100px;
+        }
+        .blob-2 {
+            width: 300px;
+            height: 300px;
+            background: #fbc2eb;
+            bottom: -50px;
+            left: -50px;
+        }
+
+        /* App Wrapper */
+        .app-wrapper {
+            width: 95%;
+            height: 95vh;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 30px;
+            display: flex;
+            margin: 2rem auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            padding: 2rem 1.5rem;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 3rem;
+        }
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: #ff85a1;
+            border-radius: 8px;
+        }
+        .brand h2 {
+            font-size: 1.3rem;
+        }
+        .brand h2 span {
+            color: #ff85a1;
+        }
+        .menu {
+            flex: 1;
+        }
+        .menu a {
+            display: block;
+            padding: 12px 0;
+            color: #636e72;
+            text-decoration: none;
+            transition: 0.3s;
+            font-weight: 500;
+        }
+        .menu a.active {
+            color: #ff85a1;
+            font-weight: 600;
+        }
+        .menu a:hover {
+            color: #ff85a1;
+        }
+        .user-info-sidebar {
+            margin-top: auto;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .user-name-sidebar {
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 0.5rem;
+        }
+        .logout-btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: #ff85a1;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .logout-btn:hover {
+            background: #e06e8a;
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .main-header {
+            margin-bottom: 2rem;
+        }
+        .main-header h1 {
+            font-size: 1.8rem;
+            color: #2d3436;
+        }
+        .main-header p {
+            color: #636e72;
+            margin-top: 0.3rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        /* Camera Card */
+        .camera-card {
+            overflow: hidden;
+        }
+        .video-container {
+            position: relative;
+            height: 350px;
+            background: #000;
+        }
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scan-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 280px;
+        }
+        .corner {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border: 3px solid #ff85a1;
+        }
+        .top-left {
+            top: 0;
+            left: 0;
+            border-right: 0;
+            border-bottom: 0;
+            border-radius: 12px 0 0 0;
+        }
+        .top-right {
+            top: 0;
+            right: 0;
+            border-left: 0;
+            border-bottom: 0;
+            border-radius: 0 12px 0 0;
+        }
+        .bottom-left {
+            bottom: 0;
+            left: 0;
+            border-right: 0;
+            border-top: 0;
+            border-radius: 0 0 0 12px;
+        }
+        .bottom-right {
+            bottom: 0;
+            right: 0;
+            border-left: 0;
+            border-top: 0;
+            border-radius: 0 0 12px 0;
+        }
+        .scanning-bar {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #ff85a1;
+            box-shadow: 0 0 15px #ff85a1;
+            animation: scan 3s infinite ease-in-out;
+        }
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+        .camera-actions {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .btn-main {
+            background: #ff85a1;
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(255, 133, 161, 0.3);
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(255, 133, 161, 0.4);
+        }
+        .btn-main:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Chat Card */
+        .chat-card {
+            height: 450px;
+        }
+        .chat-header {
+            padding: 1.2rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header h3 {
+            color: #2d3436;
+        }
+        .ai-badge {
+            background: #e3f2fd;
+            color: #1e88e5;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .chat-body {
+            flex: 1;
+            padding: 1.2rem;
+            overflow-y: auto;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 320px;
+        }
+        .msg {
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            max-width: 85%;
+            line-height: 1.4;
+        }
+        .msg.bot {
+            background: white;
+            border: 1px solid #eee;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            color: #2d3436;
+        }
+        .msg.user {
+            background: #ff85a1;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .chat-footer {
+            padding: 1rem;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .chat-footer input {
+            flex: 1;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 10px;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .chat-footer input:focus {
+            border-color: #ff85a1;
+        }
+        #send-btn {
+            background: #ff85a1;
+            color: white;
+            border: none;
+            width: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #send-btn:hover {
+            background: #e06e8a;
+        }
+
+        /* Chart Panel */
+        .chart-card {
+            grid-column: 1 / -1;
+            padding: 1.5rem;
+            margin-top: 0;
+            transition: 0.5s;
+        }
+        .results-hidden {
+            display: none;
+        }
+        .chart-header-content {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chart-header-content h3 {
+            color: #2d3436;
+        }
+        .date-stamp {
+            color: #636e72;
+            font-size: 0.8rem;
+        }
+        .charts-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        .chart-box {
+            width: 40%;
+            height: 280px;
+            position: relative;
+        }
+        .overall-score {
+            width: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .score-label {
+            position: absolute;
+            text-align: center;
+        }
+        .score-number {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #ff85a1;
+            display: block;
+        }
+        .score-text {
+            font-size: 0.7rem;
+            color: #636e72;
+        }
+
+        /* Recommendation Box */
+        .recommendation-box {
+            background: linear-gradient(135deg, #ff85a1 0%, #fbc2eb 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 20px;
+            margin-top: 1.5rem;
+        }
+        .recommendation-box h4 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .recommendation-box p {
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+        .btn-consult {
+            background: white;
+            color: #ff85a1;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: 0.3s;
+        }
+        .btn-consult:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Loading Animation */
+        .loading-dots {
+            display: inline-block;
+        }
+        .loading-dots::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-box {
+                width: 100%;
+            }
+            .sidebar {
+                width: 200px;
+                padding: 1.5rem 1rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .app-wrapper {
+                width: 98%;
+                margin: 1rem auto;
+            }
+            .sidebar {
+                display: none;
+            }
+            .content-area {
+                padding: 1rem;
+            }
+        }
+</style>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon"></div>
+                <h2>Nama<span>Web</span></h2>
+            </div>
+            <nav class="menu">
+                <a href="#" class="active">Scan Wajah</a>
+                <a href="#">Konsultasi</a>
+                <a href="#">Produk Saya</a>
+                <a href="#">Pengaturan</a>
+            </nav>
+            <div class="user-info-sidebar">
+                <div class="user-name-sidebar" id="sidebarUserName"></div>
+                <button class="logout-btn" onclick="logout()">Keluar</button>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <header class="main-header">
+                <h1>Skin Analyzer AI</h1>
+                <p>Analisis kondisi kulitmu secara real-time dengan teknologi cerdas.</p>
+            </header>
+
+            <div class="dashboard-grid">
+                <div class="card camera-card">
+                    <div class="video-container">
+                        <video id="webcam" autoplay playsinline></video>
+                        <div class="scan-frame" id="scanFrame" style="display: none;">
+                            <div class="corner top-left"></div>
+                            <div class="corner top-right"></div>
+                            <div class="corner bottom-left"></div>
+                            <div class="corner bottom-right"></div>
+                            <div class="scanning-bar"></div>
+                        </div>
+                    </div>
+                    <div class="camera-actions">
+                        <button id="capture-btn" class="btn-main">Mulai Pemindaian</button>
+                    </div>
+                </div>
+
+                <div class="card chat-card">
+                    <div class="chat-header">
+                        <h3>Asisten AI</h3>
+                        <div class="ai-badge">Online</div>
+                    </div>
+                    <div class="chat-body" id="chat-window">
+                        <div class="msg bot">
+                            Halo! Siapkan wajahmu di depan kamera dengan cahaya yang terang ya. Tekan tombol pemindaian jika sudah siap.
+                        </div>
+                    </div>
+                    <div class="chat-footer">
+                        <input type="text" id="chat-input" placeholder="Tanyakan hasil analisis...">
+                        <button id="send-btn">➤</button>
+                    </div>
+                </div>
+
+                <div class="card chart-card results-hidden" id="results-panel">
+                    <div class="chart-header-content">
+                        <h3>Ringkasan Kondisi Kulit</h3>
+                        <span id="analysis-date" class="date-stamp"></span>
+                    </div>
+                    <div class="charts-container">
+                        <div class="chart-box">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                        <div class="chart-box overall-score">
+                            <canvas id="scoreChart"></canvas>
+                            <div class="score-label">
+                                <span class="score-number" id="overall-score-val">0</span>
+                                <span class="score-text">Skor Kulit</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="recommendation-box" id="recommendationBox">
+                        <h4>💡 Rekomendasi Perawatan</h4>
+                        <p id="recommendationText">Silakan lakukan pemindaian terlebih dahulu untuk mendapatkan rekomendasi.</p>
+                        <button class="btn-consult" onclick="consultDoctor()">Konsultasi dengan Dokter Spesialis Kulit</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const captureBtn = document.getElementById('capture-btn');
+        const chatWindow = document.getElementById('chat-window');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resultsPanel = document.getElementById('results-panel');
+        const overallScoreVal = document.getElementById('overall-score-val');
+        const analysisDate = document.getElementById('analysis-date');
+        const scanFrame = document.getElementById('scanFrame');
+
+        let radarChartInst = null;
+        let scoreChartInst = null;
+        let lastScanData = null;
+        let currentUser = null;
+
+        // Load user data
+        function loadUser() {
+            const userData = localStorage.getItem('currentUser');
+            if (!userData) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = JSON.parse(userData);
+            document.getElementById('sidebarUserName').innerText = currentUser.name;
+        }
+
+        // 1. Akses Kamera
+        async function startApp() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                addMessage("Kamera tidak dapat diakses. Pastikan izin kamera aktif.", "bot");
+            }
+        }
+
+        // 2. Fungsi Tambah Pesan ke Chat
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg', sender);
+            msgDiv.innerText = text;
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 3. Analisis AI berdasarkan data scan
+        function analyzeSkinData() {
+            // Generate realistic skin analysis data
+            return {
+                kelembapan: Math.floor(Math.random() * 50) + 40,
+                minyak: Math.floor(Math.random() * 50) + 30,
+                jerawat: Math.floor(Math.random() * 45) + 25,
+                nodaHitam: Math.floor(Math.random() * 40) + 20,
+                pori: Math.floor(Math.random() * 45) + 35,
+                kerutan: Math.floor(Math.random() * 35) + 10,
+                skor: 0
+            };
+        }
+
+        function calculateScore(data) {
+            return Math.floor(
+                (data.kelembapan * 0.3 + 
+                 (100 - data.minyak) * 0.2 + 
+                 (100 - data.jerawat) * 0.2 + 
+                 (100 - data.nodaHitam) * 0.1 + 
+                 (100 - data.pori) * 0.1 + 
+                 (100 - data.kerutan) * 0.1)
+            );
+        }
+
+        function getSkinCondition(score) {
+            if (score >= 80) return "Sangat Baik";
+            if (score >= 60) return "Baik";
+            if (score >= 40) return "Cukup";
+            return "Perlu Perhatian";
+        }
+
+        function generateRecommendations(data) {
+            let recs = [];
+            if (data.kelembapan < 55) recs.push("💧 Kelembapan Rendah*: Gunakan pelembap dengan hyaluronic acid.");
+            if (data.minyak > 60) recs.push("🛢️ Kadar Minyak Tinggi*: Gunakan pembersih gel dan toner niacinamide.");
+            if (data.jerawat > 45) recs.push("🔴 Jerawat Aktif: Gunakan salicylic acid, jangan memencet jerawat.");
+            if (data.nodaHitam > 40) recs.push("⚫ Noda Hitam: Gunakan vitamin C serum dan sunscreen setiap hari.");
+            if (data.pori > 55) recs.push("👀 Pori-pori Besar: Gunakan clay mask 1x minggu dan niacinamide.");
+            if (data.kerutan > 30) recs.push("👵 Kerutan Halus: Gunakan retinol dan selalu gunakan sunscreen.");
+            if (recs.length === 0) recs.push("✨ Kondisi kulit Anda sangat baik! Pertahankan rutinitas perawatan Anda.");
+            recs.push("👨‍⚕️ Konsultasi: Untuk penanganan lebih lanjut, konsultasikan dengan dokter spesialis kulit.");
+            return recs;
+        }
+
+        // 4. Event Listener Tombol Scan
+        captureBtn.addEventListener('click', () => {
+            captureBtn.innerText = "Menganalisis...";
+            captureBtn.disabled = true;
+            resultsPanel.classList.add('results-hidden');
+            scanFrame.style.display = 'block';
+
+            setTimeout(() => {
+                // Generate data scan
+                lastScanData = analyzeSkinData();
+                lastScanData.skor = calculateScore(lastScanData);
+                
+                // Save to user history
+                if (!currentUser.scanHistory) currentUser.scanHistory = [];
+                currentUser.scanHistory.push({
+                    date: new Date().toISOString(),
+                    analysis: lastScanData
+                });
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Update users array
+                let users = JSON.parse(localStorage.getItem('users')) || [];
+                const userIndex = users.findIndex(u => u.email === currentUser.email);
+                if (userIndex !== -1) {
+                    users[userIndex] = currentUser;
+                    localStorage.setItem('users', JSON.stringify(users));
+                }
+
+                addMessage(`Analisis selesai! Skor kesehatan kulitmu: ${lastScanData.skor}/100 (${getSkinCondition(lastScanData.skor)}).`, "bot");
+                addMessage("Saya sudah menyiapkan grafik detailnya di bawah. Apa yang ingin kamu tanyakan tentang hasil ini?", "bot");
+                
+                showCharts(lastScanData);
+                
+                // Generate and display recommendations
+                const recommendations = generateRecommendations(lastScanData);
+                document.getElementById('recommendationText').innerHTML = recommendations.join('<br><br>');
+                
+                captureBtn.innerText = "Mulai Pemindaian";
+                captureBtn.disabled = false;
+                scanFrame.style.display = 'none';
+            }, 2500);
+        });
+
+        // 5. Fungsi Grafik
+        function showCharts(data) {
+            resultsPanel.classList.remove('results-hidden');
+            analysisDate.innerText = new Date().toLocaleDateString('id-ID', { dateStyle: 'long' });
+            overallScoreVal.innerText = data.skor;
+
+            if (radarChartInst) radarChartInst.destroy();
+            if (scoreChartInst) scoreChartInst.destroy();
+
+            radarChartInst = new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Kelembapan', 'Minyak', 'Bebas Jerawat', 'Noda Hitam', 'Pori', 'Kerutan'],
+                    datasets: [{
+                        label: 'Kondisi Kulit',
+                        data: [data.kelembapan, 100 - data.minyak, 100 - data.jerawat, 100 - data.nodaHitam, 100 - data.pori, 100 - data.kerutan],
+                        backgroundColor: 'rgba(255, 133, 161, 0.2)',
+                        borderColor: '#ff85a1',
+                        pointBackgroundColor: '#ff85a1'
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, 
+                    scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } } 
+                }
+            });
+
+            scoreChartInst = new Chart(document.getElementById('scoreChart'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [data.skor, 100 - data.skor],
+                        backgroundColor: ['#ff85a1', '#f0f0f0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '85%', 
+                    plugins: { tooltip: { enabled: false } } 
+                }
+            });
+        }
+
+        // 6. Fungsi Balasan Chat
+        function getAIResponse(userText, data) {
+            const input = userText.toLowerCase();
+            
+            if (!data) {
+                return "Silakan lakukan pemindaian wajah terlebih dahulu agar saya bisa menganalisis kulitmu.";
+            }
+
+            if (input.includes("lembab") || input.includes("kering")) {
+                return `💧 **Kelembapan**: ${data.kelembapan}%\n\n${data.kelembapan < 50 ? 'Kulitmu cenderung kering. Rekomendasi: gunakan pelembap dengan hyaluronic acid.' : 'Kelembapan kulitmu sudah cukup baik. Pertahankan dengan pelembap rutin.'}`;
+            } 
+            if (input.includes("minyak") || input.includes("kilap")) {
+                return `🛢️ **Kadar Minyak**: ${data.minyak}%\n\n${data.minyak > 60 ? 'Kulitmu cenderung berminyak. Gunakan pembersih gel dan toner dengan niacinamide.' : 'Kadar minyakmu normal. Terus jaga keseimbangan kulit.'}`;
+            }
+            if (input.includes("jerawat") || input.includes("beruntusan")) {
+                return `🔴 **Tingkat Jerawat**: ${data.jerawat}/100\n\n${data.jerawat > 45 ? 'Ada indikasi jerawat aktif. Gunakan salicylic acid dan jangan memencet jerawat.' : 'Kulitmu cukup bersih dari jerawat. Pertahankan rutinitasmu!'}`;
+            }
+            if (input.includes("noda") || input.includes("hitam")) {
+                return `⚫ **Noda Hitam**: ${data.nodaHitam}%\n\n${data.nodaHitam > 40 ? 'Gunakan serum vitamin C di pagi hari dan retinol di malam hari. WAJIB pakai sunscreen!' : 'Noda hitam minimal. Terus gunakan sunscreen untuk pencegahan.'}`;
+            }
+            if (input.includes("pori")) {
+                return `👀 **Pori-pori**: ${data.pori}%\n\n${data.pori > 55 ? 'Pori-pori terlihat membesar. Gunakan clay mask 1x minggu dan niacinamide serum.' : 'Pori-porimu cukup baik. Pertahankan dengan pembersihan rutin.'}`;
+            }
+            if (input.includes("skor") || input.includes("nilai")) {
+                return `📊 **Skor Kesehatan Kulit**: ${data.skor}/100 (${getSkinCondition(data.skor)})\n\n${getSkinCondition(data.skor) === 'Sangat Baik' ? 'Selamat! Pertahankan perawatanmu.' : 'Ikuti rekomendasi perawatan untuk meningkatkan skor kulitmu.'}`;
+            }
+            if (input.includes("terima kasih") || input.includes("thanks")) {
+                return "Sama-sama! Jangan lupa minum air putih yang cukup dan selalu gunakan sunscreen ya! 🌞";
+            }
+
+            return "💬 Ada yang bisa saya bantu? Kamu bisa bertanya tentang: kelembapan, minyak, jerawat, noda hitam, pori-pori, atau skor kulitmu.";
+        }
+
+        // 7. Kirim Pesan Chat
+        sendBtn.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (text) {
+                addMessage(text, 'user');
+                chatInput.value = '';
+                
+                setTimeout(() => {
+                    const reply = getAIResponse(text, lastScanData);
+                    addMessage(reply, 'bot');
+                }, 800);
+            }
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+
+        function consultDoctor() {
+            addMessage('👨‍⚕️ Anda akan diarahkan untuk konsultasi dengan dokter spesialis kulit. Silakan kunjungi poli kulit di rumah sakit terdekat atau gunakan layanan telekonsultasi. Jangan lupa bawa hasil analisis ini!', 'bot');
+            alert('🔍 Fitur konsultasi online akan segera hadir!\n\nSaat ini Anda dapat:\n1. Mengunjungi dokter spesialis kulit di rumah sakit terdekat\n2. Menggunakan layanan telekonsultasi (Halodoc, Alodokter)\n3. Membawa hasil analisis ini untuk konsultasi');
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+
+        // Jalankan aplikasi
+        loadUser();
+        startApp();
+    </script>
+</body>
+</html>
